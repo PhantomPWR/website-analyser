@@ -41,12 +41,12 @@ const { data: report, error } = await useAsyncData<ReportFull>(
 const activeTab = ref('seo')
 
 const tabs = [
-  { key: 'seo', label: 'SEO', icon: '📄' },
-  { key: 'performance', label: 'Performance', icon: '⚡' },
-  { key: 'security', label: 'Security', icon: '🔒' },
-  { key: 'technology', label: 'Technology', icon: '🛠️' },
-  { key: 'accessibility', label: 'Accessibility', icon: '♿' },
-  { key: 'content', label: 'Content', icon: '📝' },
+  { key: 'seo', label: 'SEO', icon: 'i-heroicons-document-text' },
+  { key: 'performance', label: 'Performance', icon: 'i-heroicons-bolt' },
+  { key: 'security', label: 'Security', icon: 'i-heroicons-lock-closed' },
+  { key: 'technology', label: 'Technology', icon: 'i-heroicons-wrench-screwdriver' },
+  { key: 'accessibility', label: 'Accessibility', icon: 'i-heroicons-eye' },
+  { key: 'content', label: 'Content', icon: 'i-heroicons-pencil-square' },
 ]
 
 function formatDate(iso: string) {
@@ -59,162 +59,67 @@ function downloadPdf() {
 </script>
 
 <template>
-  <div class="page">
-    <div v-if="error" class="error-banner">
-      ⚠️ Failed to load report.
-    </div>
+  <div class="flex flex-col gap-6">
+    <UAlert
+      v-if="error"
+      icon="i-heroicons-exclamation-triangle"
+      color="error"
+      variant="subtle"
+      title="Failed to load report."
+    />
 
     <template v-else-if="report">
-      <div class="report-header">
-        <div class="report-meta">
-          <NuxtLink to="/reports" class="back-link">← All reports</NuxtLink>
-          <h1 class="report-url">{{ report.url }}</h1>
-          <p class="report-date">Saved {{ formatDate(report.created_at) }}</p>
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex flex-col gap-1">
+          <UButton
+            to="/reports"
+            label="All reports"
+            icon="i-heroicons-arrow-left"
+            variant="ghost"
+            color="neutral"
+            size="xs"
+            class="self-start -ml-2"
+          />
+          <h1 class="text-xl font-bold text-gray-900 break-all">{{ report.url }}</h1>
+          <p class="text-xs text-gray-400">Saved {{ formatDate(report.created_at) }}</p>
         </div>
-        <button class="pdf-btn" @click="downloadPdf">Download PDF</button>
+        <UButton
+          label="Download PDF"
+          icon="i-heroicons-arrow-down-tray"
+          size="sm"
+          class="flex-shrink-0"
+          @click="downloadPdf"
+        />
       </div>
 
-      <div class="tabs">
-        <nav class="tab-nav">
+      <div>
+        <div class="flex border-b border-gray-200 overflow-x-auto">
           <button
             v-for="tab in tabs"
             :key="tab.key"
-            class="tab-btn"
-            :class="{ 'tab-btn--active': activeTab === tab.key }"
+            class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px cursor-pointer"
+            :class="activeTab === tab.key
+              ? 'text-primary-600 border-primary-600'
+              : 'text-gray-500 border-transparent hover:text-gray-700'"
             @click="activeTab = tab.key"
           >
-            <span class="tab-icon">{{ tab.icon }}</span>
+            <UIcon :name="tab.icon" class="w-4 h-4" />
             {{ tab.label }}
           </button>
-        </nav>
+        </div>
 
-        <div class="tab-panel">
+        <div class="pt-6">
           <SeoSection v-if="activeTab === 'seo' && report.data.seo" :data="report.data.seo" />
           <PerformanceSection v-else-if="activeTab === 'performance' && report.data.performance" :data="report.data.performance" />
           <SecuritySection v-else-if="activeTab === 'security' && report.data.security" :data="report.data.security" />
           <TechSection v-else-if="activeTab === 'technology' && report.data.tech" :data="report.data.tech" />
           <AccessibilitySection v-else-if="activeTab === 'accessibility' && report.data.accessibility" :data="report.data.accessibility" />
           <ContentSection v-else-if="activeTab === 'content' && report.data.content" :data="report.data.content" />
-          <div v-else class="no-data">No data available for this section.</div>
+          <div v-else class="bg-white rounded-xl p-12 text-center text-gray-400 text-sm shadow-sm">
+            No data available for this section.
+          </div>
         </div>
       </div>
     </template>
   </div>
 </template>
-
-<style scoped>
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.error-banner {
-  background: #fff0f0;
-  border: 1px solid #fca5a5;
-  color: #b91c1c;
-  padding: 1rem 1.25rem;
-  border-radius: 8px;
-}
-
-.report-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.report-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.back-link {
-  font-size: 0.85rem;
-  color: #4f46e5;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.back-link:hover { text-decoration: underline; }
-
-.report-url {
-  font-size: 1.3rem;
-  font-weight: 700;
-  word-break: break-all;
-}
-
-.report-date {
-  font-size: 0.8rem;
-  color: #999;
-}
-
-.tabs {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.tab-nav {
-  display: flex;
-  gap: 0;
-  border-bottom: 2px solid #e5e7eb;
-  overflow-x: auto;
-}
-
-.tab-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.7rem 1.1rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #666;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.tab-btn:hover { color: #4f46e5; }
-
-.tab-btn--active {
-  color: #4f46e5;
-  border-bottom-color: #4f46e5;
-  font-weight: 600;
-}
-
-.tab-icon { font-size: 1rem; }
-
-.tab-panel { padding-top: 1.5rem; }
-
-.no-data {
-  background: #fff;
-  border-radius: 12px;
-  padding: 3rem;
-  text-align: center;
-  color: #aaa;
-  font-size: 0.95rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.pdf-btn {
-  align-self: flex-start;
-  padding: 0.55rem 1.1rem;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #fff;
-  background: #4f46e5;
-  border: none;
-  border-radius: 7px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s;
-}
-
-.pdf-btn:hover { background: #4338ca; }
-</style>

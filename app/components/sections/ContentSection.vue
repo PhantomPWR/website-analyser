@@ -23,6 +23,27 @@ function ratioStatus(ratio: number): Status {
   return 'fail'
 }
 
+function ringClass(s: Status) {
+  return s === 'pass' ? 'border-green-500' : s === 'warn' ? 'border-amber-500' : 'border-red-500'
+}
+
+function gradeClass(s: Status) {
+  return s === 'pass' ? 'text-green-700' : s === 'warn' ? 'text-amber-700' : 'text-red-700'
+}
+
+function statBorderClass(s?: Status) {
+  if (!s) return 'border-gray-200'
+  return s === 'pass' ? 'border-green-500' : s === 'warn' ? 'border-amber-500' : 'border-red-500'
+}
+
+function statusColor(s: Status) {
+  return s === 'pass' ? 'success' : s === 'warn' ? 'warning' : 'error'
+}
+
+function statusIcon(s: Status) {
+  return s === 'pass' ? '✓' : s === 'warn' ? '!' : '✗'
+}
+
 interface StatCard {
   label: string
   value: string
@@ -55,14 +76,8 @@ const stats = computed<StatCard[]>(() => [
 ])
 
 const linkStats = computed<StatCard[]>(() => [
-  {
-    label: 'Internal links',
-    value: props.data.internal_links_total.toLocaleString(),
-  },
-  {
-    label: 'External links',
-    value: props.data.external_links_total.toLocaleString(),
-  },
+  { label: 'Internal links', value: props.data.internal_links_total.toLocaleString() },
+  { label: 'External links', value: props.data.external_links_total.toLocaleString() },
   {
     label: 'Broken links',
     value: props.data.broken_links.length.toLocaleString(),
@@ -70,266 +85,112 @@ const linkStats = computed<StatCard[]>(() => [
     status: props.data.broken_links.length === 0 ? 'pass' : 'fail',
   },
 ])
+
+const readStatus = computed(() => readabilityStatus(props.data.flesch_reading_ease))
 </script>
 
 <template>
-  <section class="section-card">
-    <h2 class="section-title">
-      <span class="section-icon">📝</span> Content
-    </h2>
-
-    <!-- Readability -->
-    <div class="readability-row">
-      <div class="flesch-ring" :class="`ring--${readabilityStatus(data.flesch_reading_ease)}`">
-        <span class="flesch-score">{{ data.flesch_reading_ease }}</span>
-        <span class="flesch-label">/ 100</span>
+  <UCard>
+    <template #header>
+      <div class="flex items-center gap-2">
+        <UIcon name="i-heroicons-pencil-square" class="w-5 h-5 text-primary-500" />
+        <h2 class="text-lg font-bold">Content</h2>
       </div>
-      <div class="flesch-meta">
-        <p class="flesch-heading">Flesch Reading Ease</p>
-        <p class="flesch-grade" :class="`grade--${readabilityStatus(data.flesch_reading_ease)}`">
-          {{ data.readability_label }}
+    </template>
+
+    <div class="flex flex-col gap-6">
+      <!-- Readability -->
+      <div class="flex items-center gap-5">
+        <div
+          class="w-20 h-20 rounded-full border-[5px] flex flex-col items-center justify-center flex-shrink-0"
+          :class="ringClass(readStatus)"
+        >
+          <span class="text-xl font-bold leading-none">{{ data.flesch_reading_ease }}</span>
+          <span class="text-xs text-gray-400">/ 100</span>
+        </div>
+        <div>
+          <p class="font-semibold">Flesch Reading Ease</p>
+          <p class="text-sm font-semibold mt-0.5" :class="gradeClass(readStatus)">{{ data.readability_label }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">60–70 is considered ideal for general audiences</p>
+        </div>
+      </div>
+
+      <!-- Content stats -->
+      <div class="flex flex-col gap-3">
+        <p class="text-sm font-semibold text-gray-700">Content stats</p>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div
+            v-for="stat in stats"
+            :key="stat.label"
+            class="bg-gray-50 rounded-lg p-3 border-l-4 flex flex-col gap-0.5"
+            :class="statBorderClass(stat.status)"
+          >
+            <span class="text-2xl font-bold text-gray-900">{{ stat.value }}</span>
+            <span class="text-xs font-semibold text-gray-600">{{ stat.label }}</span>
+            <span v-if="stat.sub" class="text-xs text-gray-400">{{ stat.sub }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Links -->
+      <div class="flex flex-col gap-3">
+        <p class="text-sm font-semibold text-gray-700">Links</p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div
+            v-for="stat in linkStats"
+            :key="stat.label"
+            class="bg-gray-50 rounded-lg p-3 border-l-4 flex flex-col gap-0.5"
+            :class="statBorderClass(stat.status)"
+          >
+            <span class="text-2xl font-bold text-gray-900">{{ stat.value }}</span>
+            <span class="text-xs font-semibold text-gray-600">{{ stat.label }}</span>
+            <span v-if="stat.sub" class="text-xs text-gray-400">{{ stat.sub }}</span>
+          </div>
+        </div>
+
+        <div v-if="data.broken_links.length" class="flex flex-col gap-1.5 mt-1">
+          <div
+            v-for="link in data.broken_links"
+            :key="link.url"
+            class="flex items-baseline gap-2 bg-red-50 rounded-lg px-3 py-2 text-sm"
+          >
+            <UBadge color="error" variant="subtle" size="sm" class="flex-shrink-0 font-bold">
+              {{ link.status_code ?? 'ERR' }}
+            </UBadge>
+            <span class="text-red-700 break-all flex-1">{{ link.url }}</span>
+            <span v-if="link.error" class="text-gray-400 text-xs whitespace-nowrap">{{ link.error }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Misc checks -->
+      <div class="flex flex-col gap-2">
+        <p class="text-sm font-semibold text-gray-700">Misc checks</p>
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2.5">
+            <UBadge :color="data.has_favicon ? 'success' : 'warning'" variant="subtle" size="sm" class="w-6 h-6 flex items-center justify-center rounded-full flex-shrink-0 font-bold text-xs">
+              {{ data.has_favicon ? '✓' : '!' }}
+            </UBadge>
+            <span class="text-sm font-medium w-36 flex-shrink-0">Favicon</span>
+            <span class="text-xs text-gray-500">{{ data.has_favicon ? 'Found' : 'Not found' }}</span>
+          </div>
+          <div class="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2.5">
+            <UBadge :color="data.has_meta_viewport ? 'success' : 'error'" variant="subtle" size="sm" class="w-6 h-6 flex items-center justify-center rounded-full flex-shrink-0 font-bold text-xs">
+              {{ data.has_meta_viewport ? '✓' : '✗' }}
+            </UBadge>
+            <span class="text-sm font-medium w-36 flex-shrink-0">Meta viewport</span>
+            <span class="text-xs text-gray-500">{{ data.has_meta_viewport ? 'Present' : 'Missing — required for mobile' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Text preview -->
+      <div v-if="data.text_preview" class="flex flex-col gap-2">
+        <p class="text-sm font-semibold text-gray-700">Content preview</p>
+        <p class="text-sm text-gray-500 leading-relaxed bg-gray-50 rounded-lg px-4 py-3 border-l-4 border-gray-200">
+          {{ data.text_preview }}
         </p>
-        <p class="flesch-sub">60–70 is considered ideal for general audiences</p>
       </div>
     </div>
-
-    <!-- Content stats -->
-    <div class="block">
-      <h3 class="block-title">Content stats</h3>
-      <div class="stat-grid">
-        <div
-          v-for="stat in stats"
-          :key="stat.label"
-          class="stat-card"
-          :class="stat.status ? `stat--${stat.status}` : ''"
-        >
-          <span class="stat-value">{{ stat.value }}</span>
-          <span class="stat-label">{{ stat.label }}</span>
-          <span v-if="stat.sub" class="stat-sub">{{ stat.sub }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Links -->
-    <div class="block">
-      <h3 class="block-title">Links</h3>
-      <div class="stat-grid">
-        <div
-          v-for="stat in linkStats"
-          :key="stat.label"
-          class="stat-card"
-          :class="stat.status ? `stat--${stat.status}` : ''"
-        >
-          <span class="stat-value">{{ stat.value }}</span>
-          <span class="stat-label">{{ stat.label }}</span>
-          <span v-if="stat.sub" class="stat-sub">{{ stat.sub }}</span>
-        </div>
-      </div>
-
-      <div v-if="data.broken_links.length" class="broken-links">
-        <div v-for="link in data.broken_links" :key="link.url" class="broken-row">
-          <span class="broken-badge">
-            {{ link.status_code ?? 'ERR' }}
-          </span>
-          <span class="broken-url">{{ link.url }}</span>
-          <span v-if="link.error" class="broken-error">{{ link.error }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Misc checks -->
-    <div class="block">
-      <h3 class="block-title">Misc checks</h3>
-      <div class="checks">
-        <div class="check-row">
-          <span class="check-badge" :class="data.has_favicon ? 'badge--pass' : 'badge--warn'">
-            {{ data.has_favicon ? '✓' : '!' }}
-          </span>
-          <span class="check-label">Favicon</span>
-          <span class="check-detail">{{ data.has_favicon ? 'Found' : 'Not found' }}</span>
-        </div>
-        <div class="check-row">
-          <span class="check-badge" :class="data.has_meta_viewport ? 'badge--pass' : 'badge--fail'">
-            {{ data.has_meta_viewport ? '✓' : '✗' }}
-          </span>
-          <span class="check-label">Meta viewport</span>
-          <span class="check-detail">{{ data.has_meta_viewport ? 'Present' : 'Missing — required for mobile' }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Text preview -->
-    <div v-if="data.text_preview" class="block">
-      <h3 class="block-title">Content preview</h3>
-      <p class="text-preview">{{ data.text_preview }}</p>
-    </div>
-  </section>
+  </UCard>
 </template>
-
-<style scoped>
-.section-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1.75rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.section-title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.section-icon { font-size: 1.3rem; }
-
-/* Readability ring */
-.readability-row {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-.flesch-ring {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  border: 5px solid;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.ring--pass { border-color: #10b981; }
-.ring--warn { border-color: #f59e0b; }
-.ring--fail { border-color: #ef4444; }
-
-.flesch-score { font-size: 1.4rem; font-weight: 700; line-height: 1; }
-.flesch-label { font-size: 0.7rem; color: #888; }
-.flesch-heading { font-weight: 600; font-size: 1rem; }
-.flesch-grade { font-size: 0.9rem; font-weight: 600; margin-top: 0.15rem; }
-.grade--pass { color: #065f46; }
-.grade--warn { color: #92400e; }
-.grade--fail { color: #991b1b; }
-.flesch-sub { font-size: 0.75rem; color: #888; margin-top: 0.2rem; }
-
-/* Stats */
-.block { display: flex; flex-direction: column; gap: 0.75rem; }
-
-.block-title {
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 0.75rem;
-}
-
-.stat-card {
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: 0.85rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  border-left: 3px solid #e5e7eb;
-}
-
-.stat--pass { border-color: #10b981; }
-.stat--warn { border-color: #f59e0b; }
-.stat--fail { border-color: #ef4444; }
-
-.stat-value { font-size: 1.4rem; font-weight: 700; color: #1a1a2e; }
-.stat-label { font-size: 0.78rem; font-weight: 600; color: #555; }
-.stat-sub { font-size: 0.72rem; color: #888; }
-
-/* Broken links */
-.broken-links {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  margin-top: 0.25rem;
-}
-
-.broken-row {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  padding: 0.35rem 0.5rem;
-  background: #fff1f2;
-  border-radius: 6px;
-  font-size: 0.82rem;
-}
-
-.broken-badge {
-  background: #fee2e2;
-  color: #991b1b;
-  font-weight: 700;
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  flex-shrink: 0;
-}
-
-.broken-url {
-  color: #b91c1c;
-  word-break: break-all;
-  flex: 1;
-}
-
-.broken-error {
-  color: #888;
-  font-size: 0.75rem;
-  white-space: nowrap;
-}
-
-/* Misc checks */
-.checks { display: flex; flex-direction: column; gap: 0.4rem; }
-
-.check-row {
-  display: grid;
-  grid-template-columns: 28px 160px 1fr;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0.75rem;
-  background: #f9fafb;
-  border-radius: 6px;
-}
-
-.check-badge {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.badge--pass { background: #d1fae5; color: #065f46; }
-.badge--warn { background: #fef3c7; color: #92400e; }
-.badge--fail { background: #fee2e2; color: #991b1b; }
-
-.check-label { font-weight: 500; font-size: 0.9rem; }
-.check-detail { font-size: 0.82rem; color: #666; }
-
-/* Preview */
-.text-preview {
-  font-size: 0.88rem;
-  color: #555;
-  line-height: 1.6;
-  background: #f9fafb;
-  padding: 0.85rem 1rem;
-  border-radius: 8px;
-  border-left: 3px solid #e5e7eb;
-}
-</style>
