@@ -4,7 +4,12 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8007',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || '',
     },
+  },
+  routeRules: {
+    '/analyse/**': { proxy: 'http://backend:8000/analyse/**' },
+    '/reports/**': { proxy: 'http://backend:8000/reports/**' },
+    '/health': { proxy: 'http://backend:8000/health' },
   },
 })

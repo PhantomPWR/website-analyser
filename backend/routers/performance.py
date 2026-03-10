@@ -85,7 +85,7 @@ async def analyse_performance(url: str = Query(..., description="URL to analyse"
         if PAGESPEED_KEY:
             params["key"] = PAGESPEED_KEY
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             resp = await client.get(PAGESPEED_API, params=params)
             resp.raise_for_status()
             data = resp.json()
@@ -111,7 +111,7 @@ async def analyse_performance(url: str = Query(..., description="URL to analyse"
         pagespeed_error = f"PageSpeed API returned {e.response.status_code}: {e.response.text[:300]}"
     except Exception as e:
         pagespeed_available = False
-        pagespeed_error = str(e)
+        pagespeed_error = str(e) or f"{type(e).__name__} (no message)"
     else:
         pagespeed_error = None
 

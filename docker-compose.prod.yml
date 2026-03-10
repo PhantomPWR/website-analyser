@@ -1,6 +1,6 @@
 services:
   frontend:
-    build: .
+    image: pieterkdevilliers/website-analyser-frontend:latest
     ports:
       - "3007:3007"
     environment:
@@ -13,9 +13,7 @@ services:
     restart: unless-stopped
 
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
+    image: pieterkdevilliers/website-analyser-backend:latest
     env_file:
       - .env
     environment:
