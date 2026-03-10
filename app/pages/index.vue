@@ -6,7 +6,7 @@ import TechSection from '~/components/sections/TechSection.vue'
 import AccessibilitySection from '~/components/sections/AccessibilitySection.vue'
 import ContentSection from '~/components/sections/ContentSection.vue'
 
-const { loading, error, saving, savedReportId, results, analysedUrl, analyseUrl, saveReport } = useAnalyser()
+const { loading, saving, error, results, analysedUrl, analyseUrl } = useAnalyser()
 
 const inputUrl = ref('')
 const activeTab = ref('seo')
@@ -78,27 +78,10 @@ async function handleSubmit() {
         <p class="text-sm text-gray-500">
           Results for <strong class="text-gray-800">{{ analysedUrl }}</strong>
         </p>
-        <div class="flex items-center gap-3">
-          <UButton
-            v-if="savedReportId"
-            :to="`/reports/${savedReportId}`"
-            label="View saved report"
-            icon="i-heroicons-arrow-right"
-            trailing
-            color="success"
-            variant="subtle"
-            size="sm"
-          />
-          <UButton
-            v-else
-            icon="i-heroicons-bookmark"
-            label="Save report"
-            variant="outline"
-            size="sm"
-            :loading="saving"
-            @click="saveReport"
-          />
-        </div>
+        <span v-if="saving" class="flex items-center gap-1.5 text-xs text-gray-400">
+          <UIcon name="i-heroicons-arrow-path" class="w-3.5 h-3.5 animate-spin" />
+          Saving…
+        </span>
       </div>
 
       <!-- Tabs -->

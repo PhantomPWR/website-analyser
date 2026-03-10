@@ -155,18 +155,19 @@ export function useAnalyser() {
   const apiBase = config.public.apiBase
 
   const loading = ref(false)
-  const error = ref<string | null>(null)
   const saving = ref(false)
+  const error = ref<string | null>(null)
   const savedReportId = ref<string | null>(null)
   const results = ref<AnalysisState>({ seo: null, performance: null, security: null, tech: null, accessibility: null, content: null })
   const analysedUrl = ref<string | null>(null)
 
   async function analyseUrl(url: string) {
     loading.value = true
+    saving.value = false
     error.value = null
+    savedReportId.value = null
     results.value = { seo: null, performance: null, security: null, tech: null, accessibility: null, content: null }
     analysedUrl.value = url
-    savedReportId.value = null
 
     try {
       const [seo, performance, security, tech, accessibility, content] = await Promise.all([
@@ -177,33 +178,22 @@ export function useAnalyser() {
         $fetch<AccessibilityResult>(`${apiBase}/analyse/accessibility`, { query: { url } }),
         $fetch<ContentResult>(`${apiBase}/analyse/content`, { query: { url } }),
       ])
-      results.value.seo = seo
-      results.value.performance = performance
-      results.value.security = security
-      results.value.tech = tech
-      results.value.accessibility = accessibility
-      results.value.content = content
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Failed to analyse URL'
-      error.value = msg
-    } finally {
+      results.value = { seo, performance, security, tech, accessibility, content }
       loading.value = false
-    }
-  }
 
-  async function saveReport() {
-    if (!analysedUrl.value || !results.value.seo) return
-    saving.value = true
-    try {
+      saving.value = true
       const { id } = await $fetch<{ id: string }>(`${apiBase}/reports`, {
         method: 'POST',
-        body: { url: analysedUrl.value, data: results.value },
+        body: { url, data: results.value },
       })
       savedReportId.value = id
+    } catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : 'Failed to analyse URL'
     } finally {
+      loading.value = false
       saving.value = false
     }
   }
 
-  return { loading, error, saving, savedReportId, results, analysedUrl, analyseUrl, saveReport }
+  return { loading, saving, error, savedReportId, results, analysedUrl, analyseUrl }
 }
