@@ -67,252 +67,131 @@ const checks = computed<Check[]>(() => {
     },
   ]
 })
+
+function ringClass(s: Status) {
+  return s === 'pass' ? 'border-green-500' : s === 'warn' ? 'border-amber-500' : 'border-red-500'
+}
+
+function statusColor(s: Status) {
+  return s === 'pass' ? 'success' : s === 'warn' ? 'warning' : 'error'
+}
+
+function statusIcon(s: Status) {
+  return s === 'pass' ? '✓' : s === 'warn' ? '!' : '✗'
+}
+
+const overallStatus = computed(() => scoreStatus(props.data.score))
 </script>
 
 <template>
-  <section class="section-card">
-    <h2 class="section-title">
-      <span class="section-icon">♿</span> Accessibility
-    </h2>
-
-    <!-- Score -->
-    <div class="score-row">
-      <div class="score-ring" :class="`ring--${scoreStatus(data.score)}`">
-        <span class="score-value">{{ data.score }}</span>
-        <span class="score-label">/ 100</span>
+  <UCard>
+    <template #header>
+      <div class="flex items-center gap-2">
+        <UIcon name="i-heroicons-eye" class="w-5 h-5 text-primary-500" />
+        <h2 class="text-lg font-bold">Accessibility</h2>
       </div>
-      <div class="score-meta">
-        <p class="score-heading">Accessibility score</p>
-        <p class="score-sub">{{ data.issues_total }} issue{{ data.issues_total !== 1 ? 's' : '' }} found</p>
-      </div>
-    </div>
+    </template>
 
-    <!-- Checks -->
-    <div class="checks">
-      <h3 class="block-title">Checks</h3>
-      <div
-        v-for="check in checks"
-        :key="check.label"
-        class="check-row"
-      >
-        <span class="check-badge" :class="`badge--${check.status}`">
-          {{ check.status === 'pass' ? '✓' : check.status === 'warn' ? '!' : '✗' }}
-        </span>
-        <div class="check-body">
-          <span class="check-label">{{ check.label }}</span>
-          <span class="check-detail">{{ check.detail }}</span>
+    <div class="flex flex-col gap-6">
+      <!-- Score ring -->
+      <div class="flex items-center gap-5">
+        <div
+          class="w-20 h-20 rounded-full border-[5px] flex flex-col items-center justify-center flex-shrink-0"
+          :class="ringClass(overallStatus)"
+        >
+          <span class="text-xl font-bold leading-none">{{ data.score }}</span>
+          <span class="text-xs text-gray-400">/ 100</span>
+        </div>
+        <div>
+          <p class="font-semibold">Accessibility score</p>
+          <p class="text-sm text-gray-400 mt-0.5">
+            {{ data.issues_total }} issue{{ data.issues_total !== 1 ? 's' : '' }} found
+          </p>
         </div>
       </div>
-    </div>
 
-    <!-- Image issues -->
-    <div v-if="data.image_issues.length" class="issue-block">
-      <h3 class="block-title">Image alt issues ({{ data.image_issues.length }})</h3>
-      <div class="issue-list">
-        <div v-for="(issue, i) in data.image_issues" :key="i" class="issue-row">
-          <span class="issue-badge" :class="issue.issue === 'missing_alt' ? 'badge--fail' : 'badge--warn'">
-            {{ issue.issue === 'missing_alt' ? '✗' : '!' }}
-          </span>
-          <div class="issue-body">
-            <span class="issue-tag">{{ issue.issue === 'missing_alt' ? 'Missing alt' : 'Empty alt' }}</span>
-            <span class="issue-src">{{ issue.src || '(no src)' }}</span>
+      <!-- Checks -->
+      <div class="flex flex-col gap-2">
+        <p class="text-sm font-semibold text-gray-700">Checks</p>
+        <div
+          v-for="check in checks"
+          :key="check.label"
+          class="flex items-start gap-3 bg-gray-50 rounded-lg px-3 py-2.5"
+        >
+          <UBadge :color="statusColor(check.status)" variant="subtle" size="sm" class="w-6 h-6 flex items-center justify-center rounded-full flex-shrink-0 font-bold text-xs mt-0.5">
+            {{ statusIcon(check.status) }}
+          </UBadge>
+          <div class="flex flex-col gap-0.5 min-w-0">
+            <span class="text-sm font-medium">{{ check.label }}</span>
+            <span class="text-xs text-gray-500 break-all">{{ check.detail }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Image issues -->
+      <div v-if="data.image_issues.length" class="flex flex-col gap-2">
+        <p class="text-sm font-semibold text-gray-700">Image alt issues ({{ data.image_issues.length }})</p>
+        <div class="flex flex-col gap-1.5">
+          <div v-for="(issue, i) in data.image_issues" :key="i" class="flex items-start gap-2.5 bg-gray-50 rounded-lg px-3 py-2">
+            <UBadge :color="issue.issue === 'missing_alt' ? 'error' : 'warning'" variant="subtle" size="sm" class="w-5 h-5 flex items-center justify-center rounded-full flex-shrink-0 font-bold text-xs mt-0.5">
+              {{ issue.issue === 'missing_alt' ? '✗' : '!' }}
+            </UBadge>
+            <div class="flex flex-col gap-0.5 min-w-0">
+              <span class="text-sm font-medium">{{ issue.issue === 'missing_alt' ? 'Missing alt' : 'Empty alt' }}</span>
+              <span class="text-xs text-gray-500 break-all">{{ issue.src || '(no src)' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Heading issues -->
+      <div v-if="data.heading_issues.length" class="flex flex-col gap-2">
+        <p class="text-sm font-semibold text-gray-700">Heading issues</p>
+        <div class="flex flex-col gap-1.5">
+          <div v-for="(issue, i) in data.heading_issues" :key="i" class="flex items-start gap-2.5 bg-gray-50 rounded-lg px-3 py-2">
+            <UBadge color="warning" variant="subtle" size="sm" class="w-5 h-5 flex items-center justify-center rounded-full flex-shrink-0 font-bold text-xs mt-0.5">!</UBadge>
+            <div class="flex flex-col gap-0.5 min-w-0">
+              <span class="text-sm font-medium">{{ issue.tag.toUpperCase() }}: {{ issue.issue }}</span>
+              <span v-if="issue.text" class="text-xs text-gray-500">"{{ issue.text }}"</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form issues -->
+      <div v-if="data.form_issues.length" class="flex flex-col gap-2">
+        <p class="text-sm font-semibold text-gray-700">Form label issues ({{ data.form_issues.length }})</p>
+        <div class="flex flex-col gap-1.5">
+          <div v-for="(issue, i) in data.form_issues" :key="i" class="flex items-start gap-2.5 bg-gray-50 rounded-lg px-3 py-2">
+            <UBadge color="error" variant="subtle" size="sm" class="w-5 h-5 flex items-center justify-center rounded-full flex-shrink-0 font-bold text-xs mt-0.5">✗</UBadge>
+            <div class="flex flex-col gap-0.5 min-w-0">
+              <span class="text-sm font-medium">
+                {{ issue.element }}<span v-if="issue.input_type"> [type="{{ issue.input_type }}"]</span>
+              </span>
+              <span class="text-xs text-gray-500">{{ issue.issue }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARIA stats -->
+      <div class="flex flex-col gap-2">
+        <p class="text-sm font-semibold text-gray-700">ARIA usage</p>
+        <div class="flex gap-3 flex-wrap">
+          <div class="bg-primary-50 border border-primary-100 rounded-lg px-4 py-3 flex flex-col gap-0.5 min-w-[90px] text-center">
+            <span class="text-2xl font-bold text-primary-600">{{ data.aria_roles_count }}</span>
+            <span class="text-xs text-gray-500">ARIA roles</span>
+          </div>
+          <div class="bg-primary-50 border border-primary-100 rounded-lg px-4 py-3 flex flex-col gap-0.5 min-w-[90px] text-center">
+            <span class="text-2xl font-bold text-primary-600">{{ data.aria_labels_count }}</span>
+            <span class="text-xs text-gray-500">aria-label attrs</span>
+          </div>
+          <div class="bg-primary-50 border border-primary-100 rounded-lg px-4 py-3 flex flex-col gap-0.5 min-w-[90px] text-center">
+            <span class="text-2xl font-bold text-primary-600">{{ data.aria_landmarks.length }}</span>
+            <span class="text-xs text-gray-500">Landmarks</span>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Heading issues -->
-    <div v-if="data.heading_issues.length" class="issue-block">
-      <h3 class="block-title">Heading issues</h3>
-      <div class="issue-list">
-        <div v-for="(issue, i) in data.heading_issues" :key="i" class="issue-row">
-          <span class="issue-badge badge--warn">!</span>
-          <div class="issue-body">
-            <span class="issue-tag">{{ issue.tag.toUpperCase() }}: {{ issue.issue }}</span>
-            <span v-if="issue.text" class="issue-src">"{{ issue.text }}"</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Form issues -->
-    <div v-if="data.form_issues.length" class="issue-block">
-      <h3 class="block-title">Form label issues ({{ data.form_issues.length }})</h3>
-      <div class="issue-list">
-        <div v-for="(issue, i) in data.form_issues" :key="i" class="issue-row">
-          <span class="issue-badge badge--fail">✗</span>
-          <div class="issue-body">
-            <span class="issue-tag">
-              {{ issue.element }}<span v-if="issue.input_type"> [type="{{ issue.input_type }}"]</span>
-            </span>
-            <span class="issue-src">{{ issue.issue }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ARIA summary -->
-    <div class="aria-block">
-      <h3 class="block-title">ARIA usage</h3>
-      <div class="aria-grid">
-        <div class="aria-stat">
-          <span class="aria-count">{{ data.aria_roles_count }}</span>
-          <span class="aria-label">ARIA roles</span>
-        </div>
-        <div class="aria-stat">
-          <span class="aria-count">{{ data.aria_labels_count }}</span>
-          <span class="aria-label">aria-label attrs</span>
-        </div>
-        <div class="aria-stat">
-          <span class="aria-count">{{ data.aria_landmarks.length }}</span>
-          <span class="aria-label">Landmarks</span>
-        </div>
-      </div>
-    </div>
-  </section>
+  </UCard>
 </template>
-
-<style scoped>
-.section-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1.75rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.section-title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.section-icon { font-size: 1.3rem; }
-
-.score-row {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-.score-ring {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  border: 5px solid;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.ring--pass { border-color: #10b981; }
-.ring--warn { border-color: #f59e0b; }
-.ring--fail { border-color: #ef4444; }
-
-.score-value { font-size: 1.4rem; font-weight: 700; line-height: 1; }
-.score-label { font-size: 0.7rem; color: #888; }
-.score-heading { font-weight: 600; font-size: 1rem; }
-.score-sub { font-size: 0.8rem; color: #888; margin-top: 0.2rem; }
-
-.block-title {
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin-bottom: 0.6rem;
-}
-
-.checks {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.check-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.6rem 0.75rem;
-  background: #f9fafb;
-  border-radius: 6px;
-}
-
-.check-badge, .issue-badge {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.badge--pass { background: #d1fae5; color: #065f46; }
-.badge--warn { background: #fef3c7; color: #92400e; }
-.badge--fail { background: #fee2e2; color: #991b1b; }
-
-.check-body, .issue-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-width: 0;
-}
-
-.check-label, .issue-tag { font-weight: 500; font-size: 0.9rem; }
-.check-detail, .issue-src { font-size: 0.78rem; color: #666; word-break: break-all; }
-
-.issue-block { display: flex; flex-direction: column; }
-
-.issue-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.issue-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: 6px;
-  background: #fafafa;
-}
-
-.aria-block { display: flex; flex-direction: column; }
-
-.aria-grid {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.aria-stat {
-  background: #f5f3ff;
-  border: 1px solid #ede9fe;
-  border-radius: 8px;
-  padding: 0.75rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-width: 100px;
-  text-align: center;
-}
-
-.aria-count {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #4f46e5;
-}
-
-.aria-label {
-  font-size: 0.75rem;
-  color: #666;
-}
-</style>
